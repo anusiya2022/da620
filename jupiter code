@@ -1,0 +1,515 @@
+# DA 620 - CAPSTONE 
+Heart Rate failure Analysis
+Anusiya Sekar
+
+# Data Exploration
+
+#Installing required libararies
+!pip install plotly
+!pip install plotly_express
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns 
+import plotly_express as px
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+
+from sklearn.metrics import confusion_matrix , classification_report , accuracy_score
+import warnings 
+warnings.filterwarnings('ignore')
+
+
+Data Exploration
+
+
+df = pd.read_csv("heart_failure_clinical_records_dataset.csv")
+df.head()
+
+rows, columns = df.shape
+
+print("Number of Rows:", rows)
+print("Number of Columns:", columns)
+
+df.info()
+
+df.describe()
+
+import pandas as pd
+
+# Assuming 'df' is your DataFrame
+# Check for null values in each column
+null_counts = df.isnull().sum()
+
+# Display columns with null values and their counts
+print("Columns with null values:")
+print(null_counts[null_counts > 0])
+
+# Alternatively, check if any null values exist in the entire DataFrame
+if df.isnull().values.any():
+    print("There are null values in the DataFrame.")
+else:
+    print("No null values in the DataFrame.")
+
+#This is how the data changes if we remove outliers
+rom scipy.stats import zscore
+df_no_outliers = df[(np.abs(zscore(df)) < 3).all(axis=1)]
+df_no_outliers.shape
+
+# Data Visualization and Manipulation
+
+
+Correlation analysis
+
+corr_matrix = df.corr()
+corr_matrix
+
+px.imshow(df.corr(),title="Correlation Plot of the Heat Failure Prediction")
+
+sns.set(style="dark")
+mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
+cmap = sns.diverging_palette(240, 10, as_cmap=True)
+sns.heatmap(corr_matrix, mask=mask, cmap=cmap, annot=True, fmt=".1f", square=False,)
+
+# Show the plot
+plt.show()
+
+Based on the above result We will consider DEATH_EVENT as our target feature.
+
+Let's see more plots and understand the data better
+
+#Basic historgram to see data distribution vs count
+columns_to_plot = ['age', 'creatinine_phosphokinase', 'ejection_fraction', 'platelets', 'serum_creatinine', 'serum_sodium']
+
+# Filter the DataFrame based on the condition DEATH_EVENT = 1
+filtered_df = df[df['DEATH_EVENT'] == 1]
+
+# Plot histograms for the specified columns
+filtered_df[columns_to_plot].hist(figsize=(12, 8))
+plt.suptitle('Histograms for Columns with DEATH_EVENT = 1')
+plt.show()
+
+plt.plot(df['age'], df['serum_creatinine'], marker='o', linestyle= ' ')
+
+# Adding labels and title
+plt.xlabel('Age')
+plt.ylabel('serum_creatinine')
+plt.title('Age vs serum_creatinine')
+
+# Display the plot
+plt.show()
+
+fig = px.histogram(df,x= 'DEATH_EVENT' , color='sex' , hover_data=df.columns , barmode='group')
+fig.update_layout(title_text='Histogram of DEATH_EVENT with Sex Grouping')
+fig.show()
+
+
+fig = px.pie(df, names='sex', title='Sex Ratio in Data')
+fig.show()
+
+# Filter the DataFrame based on the condition DEATH_EVENT = 1
+filtered_df = df[df['DEATH_EVENT'] == 1]
+
+# Create a pie chart for the sex ratio in the filtered DataFrame
+fig = px.pie(filtered_df, names='sex', title='Sex Ratio in Data (DEATH_EVENT = 1)')
+fig.show()
+
+fig = px.histogram(df,x= 'DEATH_EVENT' , color='anaemia' , hover_data=df.columns , barmode='group')
+fig.update_layout(title_text='Histogram of DEATH_EVENT with anaemia grouping')
+
+fig.show()
+
+fig = px.histogram(df,x= 'DEATH_EVENT' , color='diabetes' , hover_data=df.columns , barmode='group')
+fig.update_layout(title_text='Histogram of DEATH_EVENT with Diabetes grouping')
+fig.show()
+
+fig = px.histogram(df,x= 'DEATH_EVENT' , color='high_blood_pressure' , hover_data=df.columns , barmode='group')
+fig.update_layout(title_text='Histogram of DEATH_EVENT with high_blood_pressure grouping')
+fig.show()
+
+
+fig = px.histogram(df,x= 'DEATH_EVENT' , color='smoking' , hover_data=df.columns , barmode='group')
+fig.update_layout(title_text='Histogram of DEATH_EVENT with Smoking grouping')
+
+fig.show()
+
+plt.figure(figsize=(15,10))
+sns.pairplot(df , hue = 'DEATH_EVENT')
+plt.tight_layout()
+plt.plot()
+
+fig = px.box(df , y = 'age' , x = 'DEATH_EVENT' , title='Age distribution by death event')
+fig.show()
+
+fig = px.box(df , y = 'serum_creatinine' , x = 'DEATH_EVENT' , title='Creatinine Serum by death event')
+fig.show()
+
+sns.set(style="whitegrid")
+
+# List of numerical features you want to visualize
+numerical_features = ['age',  'serum_creatinine']
+
+# Create violin plots for each numerical feature
+for feature in numerical_features:
+    plt.figure(figsize=(10, 6))
+    sns.violinplot(x='DEATH_EVENT', y=feature, data=df, palette="muted")
+    plt.title(f"Violin Plot of {feature} by Death Event")
+    plt.show()
+
+df_sorted = df.sort_values(by='time')
+
+# Plotting the line graph
+plt.figure(figsize=(10, 6))
+sns.lineplot(x='serum_creatinine', y='DEATH_EVENT', data=df_sorted, ci=None)
+
+# Adding labels and title
+plt.xlabel('Serum Creatinine')
+plt.ylabel('Death Event Occurrence')
+plt.title('Death Event Occurrence Over Serum Creatinine')
+
+# Show the plot
+plt.show()
+
+sns.set(style="whitegrid")
+
+# List of numerical features you want to visualize
+numerical_features = ['creatinine_phosphokinase', 'platelets']
+
+# Create violin plots for each numerical feature
+for feature in numerical_features:
+    plt.figure(figsize=(10, 6))
+    sns.violinplot(x='DEATH_EVENT', y=feature, data=df, palette="muted")
+    plt.title(f"Violin Plot of {feature} by Death Event")
+    plt.show()
+
+df['age_squared'] = df['age'] ** 2
+df = df.drop(columns=['age_squared'])
+df.head()
+
+df_age = pd.DataFrame(df.groupby('DEATH_EVENT')['age'].mean())
+print(df_age)
+
+df.groupby('DEATH_EVENT')['serum_creatinine'].mean()
+
+df.groupby('DEATH_EVENT')['creatinine_phosphokinase'].mean()
+
+df.groupby('DEATH_EVENT')['ejection_fraction'].mean()
+
+# Preprocessing
+Define features and target
+
+
+#assigning our label to y
+X = df.drop('DEATH_EVENT' , axis='columns')
+y = df['DEATH_EVENT']
+
+#Scaling
+scaler = MinMaxScaler()
+X = scaler.fit_transform(X)
+
+#Splitting the training and testing dataset
+X_train , X_test , y_train , y_test = train_test_split(X,y,test_size= 0.1 , random_state= 42 , shuffle= True)
+
+rows, columns = X_train.shape
+print("Trainig data set has \n")
+print("Number of Rows:", rows)
+print("Number of Columns:", columns)
+
+rows, columns = X_test.shape
+print("Testing data set has \n")
+print("Number of Rows:", rows)
+print("Number of Columns:", columns)
+
+y_train.shape
+
+y_test.shape
+
+# Classification Models 
+We know that our result is a boolean velue and hence we have to run classifications and not regression. 
+
+
+1. Logistic Regression Model
+
+lr_model = LogisticRegression(penalty='l2' , C= 15 ,max_iter=1000)
+lr_model.fit(X_train , y_train)
+
+log_train_acc = lr_model.score(X_train , y_train)
+log_train_acc
+
+lr_pred = lr_model.predict(X_test)
+
+log_test_acc = accuracy_score(y_test , lr_pred)
+log_test_acc
+
+print("Logistic regression Model results:\n")
+print("Trainig Dataset accuracy:",round(log_train_acc,2) )
+print("Testing Dataset accuracy:",round(log_test_acc,2) )
+
+
+2. Decision Tree Model
+
+DT_model = DecisionTreeClassifier()
+DT_model.fit(X_train , y_train)
+
+dec_train_acc = DT_model.score(X_train , y_train)
+dec_train_acc
+
+DT_pred = DT_model.predict(X_test)
+
+dec_test_acc = accuracy_score(y_test , DT_pred)
+dec_test_acc
+
+print("Decision Tree regression Model results:\n")
+print("Trainig Dataset accuracy:",round(dec_train_acc,2) )
+print("Testing Dataset accuracy:",round(dec_test_acc,2) )
+
+
+Overfitting happened in this model
+
+3. Random Forest Model
+
+RF_model = RandomForestClassifier(n_estimators=1000)
+RF_model.fit(X_train , y_train)
+
+ran_train_acc = RF_model.score(X_train , y_train)
+ran_train_acc
+
+RF_pred = RF_model.predict(X_test)
+
+ran_test_acc = accuracy_score(y_test , RF_pred)
+ran_test_acc
+
+print("Random Forest regression Model results:\n")
+print("Trainig Dataset accuracy:",round(ran_train_acc,2) )
+print("Testing Dataset accuracy:",round(ran_test_acc,2) )
+
+4. Support Vector Classifier (SVC)
+
+svc = SVC(gamma='auto' , C=6)
+svc.fit(X_train , y_train)
+
+svc_train = svc.score(X_train , y_train)
+svc_train
+
+svc_test = svc.score(X_test , y_test)
+svc_test
+
+print("Support Vector Classifier (SVC) results:\n")
+print("Trainig Dataset accuracy:",round(svc_train,2) )
+print("Testing Dataset accuracy:",round(svc_test,2) )
+
+Conclusion
+The models are going to overfitting but the best one is Logistic regression model with accuracy 80% which is less in overfitting and to make it has higher accuracy we can get more data as this data seems small.
+
+from sklearn.ensemble import RandomForestClassifier
+
+# Assuming df is your DataFrame with features and target variable
+# Replace 'target_column' with the actual name of your target variable column
+X = df.drop('DEATH_EVENT', axis=1)  # Features
+y = df['DEATH_EVENT']  # Target variable
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Create a Random Forest classifier
+rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+
+# Fit the model to the training data
+rf_classifier.fit(X_train, y_train)
+
+# Get feature importances
+feature_importances = rf_classifier.feature_importances_
+
+# Create a DataFrame to display feature importances
+feature_importance_df = pd.DataFrame({'Feature': X.columns, 'Importance': feature_importances})
+
+# Sort the DataFrame by importance in descending order
+feature_importance_df = feature_importance_df.sort_values(by='Importance', ascending=False)
+
+# Plot the feature importances
+plt.figure(figsize=(10, 6))
+sns.barplot(x='Importance', y='Feature', data=feature_importance_df, palette='viridis')
+plt.title('Random Forest Feature Importance')
+plt.show()
+
+
+# Assuming df is your DataFrame with features and target variable
+# Replace 'target_column' with the actual name of your target variable column
+df_dropped_time_diabetes = df.drop(['time', 'diabetes','smoking','anaemia','sex'], axis=1)
+
+# Assuming df is your DataFrame with features and target variable
+# Replace 'target_column' with the actual name of your target variable column
+X = df_dropped_time_diabetes.drop('DEATH_EVENT', axis=1)  # Features
+y = df_dropped_time_diabetes['DEATH_EVENT']  # Target variable
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Create a Random Forest classifier
+rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+
+# Fit the model to the training data
+rf_classifier.fit(X_train, y_train)
+
+# Get feature importances
+feature_importances = rf_classifier.feature_importances_
+
+# Create a DataFrame to display feature importances
+feature_importance_df = pd.DataFrame({'Feature': X.columns, 'Importance': feature_importances})
+
+# Sort the DataFrame by importance in descending order
+feature_importance_df = feature_importance_df.sort_values(by='Importance', ascending=False)
+
+# Plot the feature importances
+plt.figure(figsize=(10, 6))
+sns.barplot(x='Importance', y='Feature', data=feature_importance_df, palette='viridis')
+plt.title('Random Forest Feature Importance')
+plt.show()
+
+
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix, accuracy_score
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Define a range of k values to try
+k_values = range(1, 21)  # You can adjust the range based on your preference
+
+# Initialize lists to store results
+training_accuracies = []
+testing_accuracies = []
+
+for k in k_values:
+    # Initialize the KNN classifier with the current k value
+    knn = KNeighborsClassifier(n_neighbors=k)
+    
+    # Fit the model on the training data
+    knn.fit(X_train, y_train)
+    
+    # Make predictions on the training data
+    y_train_pred = knn.predict(X_train)
+    
+    # Make predictions on the testing data
+    y_test_pred = knn.predict(X_test)
+    
+    # Evaluate the model on training data and append accuracy to the list
+    training_accuracy = accuracy_score(y_train, y_train_pred)
+    training_accuracies.append(training_accuracy)
+    
+    # Evaluate the model on testing data and append accuracy to the list
+    testing_accuracy = accuracy_score(y_test, y_test_pred)
+    testing_accuracies.append(testing_accuracy)
+
+# Find the best k value based on testing accuracy
+best_k = k_values[testing_accuracies.index(max(testing_accuracies))]
+
+# Print the best k value
+print(f"Best k value based on testing accuracy: {best_k}")
+
+# Plot the accuracies for different k values
+plt.plot(k_values, training_accuracies, label='Training Accuracy')
+plt.plot(k_values, testing_accuracies, label='Testing Accuracy')
+plt.xlabel('k Value')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.title('Training and Testing Accuracies for Different k Values')
+plt.show()
+
+# Initialize the KNN classifier with the best k value
+best_knn = KNeighborsClassifier(n_neighbors=best_k)
+
+# Fit the model on the training data
+best_knn.fit(X_train, y_train)
+
+# Make predictions on the training data
+y_train_pred_best_k = best_knn.predict(X_train)
+
+# Make predictions on the testing data
+y_test_pred_best_k = best_knn.predict(X_test)
+
+# Print confusion matrix and accuracy for training set
+print(f"\nConfusion Matrix for Training set (k={best_k}):\n", confusion_matrix(y_train, y_train_pred_best_k))
+print(f"Training Accuracy for k={best_k}: {accuracy_score(y_train, y_train_pred_best_k)}")
+
+# Print confusion matrix and accuracy for testing set
+print(f"\nConfusion Matrix for Testing set (k={best_k}):\n", confusion_matrix(y_test, y_test_pred_best_k))
+print(f"Testing Accuracy for k={best_k}: {accuracy_score(y_test, y_test_pred_best_k)}")
+
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score, confusion_matrix
+
+# Assuming X is your feature matrix and y is your target variable
+# X and y should be defined based on your dataset
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Gaussian Naive Bayes Classifier
+nb_classifier = GaussianNB()
+
+# Fit the model on the training data
+nb_classifier.fit(X_train, y_train)
+
+# Make predictions on the training data
+y_train_pred = nb_classifier.predict(X_train)
+
+print("Gaussian Naive Bayes Classifier Result \n")
+
+# Print confusion matrix and accuracy for training data
+print("Training Set Confusion Matrix:")
+print(confusion_matrix(y_train, y_train_pred))
+print("Training Set Accuracy:", accuracy_score(y_train, y_train_pred))
+
+# Make predictions on the testing data
+y_test_pred = nb_classifier.predict(X_test)
+# Print confusion matrix and accuracy for testing data
+print("\nTesting Set Confusion Matrix:")
+print(confusion_matrix(y_test, y_test_pred))
+print("Testing Set Accuracy:", accuracy_score(y_test, y_test_pred))
+
+
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+# Assuming your DataFrame is named df
+# Drop the label column to get features
+X = df.drop("DEATH_EVENT", axis=1)
+
+# Get the label column
+y = df["DEATH_EVENT"]
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Create a decision tree classifier with max_depth=3
+clf = DecisionTreeClassifier(random_state=42, max_depth=3)
+
+# Train the classifier
+clf.fit(X_train, y_train)
+
+# Make predictions on the test set
+y_pred = clf.predict(X_test)
+
+# Evaluate the classifier
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy: {accuracy:.2f}")
+
+# Display classification report and confusion matrix
+print("Classification Report:\n", classification_report(y_test, y_pred))
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+
+# Plot the decision tree with max_depth=3
+plt.figure(figsize=(15, 10))
+plot_tree(clf, feature_names=X.columns.tolist(), class_names=["Survived", "Not Survived"], filled=True, rounded=True, max_depth=3)
+plt.show()
+
+
